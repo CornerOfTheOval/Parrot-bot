@@ -10,6 +10,15 @@ Created By Matt Wenger */
 */
 
 //setting globals because queries must be asynchronous
+var timer = null;
+
+var glob_word = [];
+var glob_short = [];
+var glob_long = [];
+
+var wordQ = false;
+var shortQ = false;
+var longQ = false;
 
 var haiku = require("./lib/haiku.js");
 
@@ -210,11 +219,6 @@ function getRandomWord(message) { //NOT SURE IF I AGREE WITH THIS, WE SHOULD JUS
 /* Needs to pull from MySQL */
 function getMessageParts() { //CREATES A SENTENCE FOR THE BOT TO SAY
 
-    //setting up query arrays
-    var glob_word = [];
-    var glob_long = [];
-    var glob_short = [];
-
     //======================running queries===========================
 
     /* Query for word_table */
@@ -230,6 +234,7 @@ function getMessageParts() { //CREATES A SENTENCE FOR THE BOT TO SAY
                 //console.log('global: ', glob_word[i].word);
                 glob_word.push(json[i].word);
             }
+            wordQ = true;
         }
     });
 
@@ -244,6 +249,7 @@ function getMessageParts() { //CREATES A SENTENCE FOR THE BOT TO SAY
             for (var i = 0; i < rows.length; i++) {
                 glob_short.push(json[i].sentence);
             }
+            shortQ = true;
         }
     });
 
@@ -258,10 +264,12 @@ function getMessageParts() { //CREATES A SENTENCE FOR THE BOT TO SAY
             for (var i = 0; i < rows.length; i++) {
                 glob_long.push(json[i].sentence);
             }
-            sendParrotMessage(glob_word,glob_short,glob_long);
+            longQ = true;
         }
     });
 
+    //query response feedback
+    timer = setInterval(checkQueryResponse,200);
 
 }
 function sendParrotMessage(words, shortPhrases, longPhrases ){
@@ -301,7 +309,6 @@ function getLink(){
         } else{
             var str = JSON.stringify(rows);
             var json = JSON.parse(str);
-            //console.log(json[0].link);
             bot.channels.first().sendMessage(json[0].link);
         }
     });
@@ -313,6 +320,27 @@ function replaceAll(str, find, replace) {
   return str.replace(new RegExp(find, 'g'), replace);
 }
 
+function checkQueryResponse(){
+    /*
+    console.log("___________Waiting on queries___________");
+    if(wordQ) console.log("words query: complete");
+    else console.log("words query: running...");
+
+    if(shortQ) console.log("short_phrase query: complete");
+    else console.log("short_phrase query: running...");
+
+    if(longQ) console.log("long_phrase query: complete");
+    else console.log("long_phrase query: running...");
+    */
+
+    if(wordQ && shortQ && longQ){
+        sendParrotMessage(glob_word,glob_short,glob_long);
+        clearInterval(timer);
+        timer = null;
+    }else{
+        console.log("Queries are running...");
+    }
+}
 
 
 
